@@ -212,6 +212,12 @@ func Open(dirname string, opts *Options) (db *DB, _ error) {
 
 	// Lock the database directory.
 	fileLock, err := opts.FS.Lock(base.MakeFilepath(opts.FS, dirname, fileTypeLock, 0))
+	defer func() {
+		if fileLock != nil {
+			fileLock.Close()
+		}
+	}()
+
 	if err != nil {
 		d.dataDir.Close()
 		if d.dataDir != d.walDir {
@@ -219,11 +225,6 @@ func Open(dirname string, opts *Options) (db *DB, _ error) {
 		}
 		return nil, err
 	}
-	defer func() {
-		if fileLock != nil {
-			fileLock.Close()
-		}
-	}()
 
 	// Establish the format major version.
 	d.mu.formatVers.vers, d.mu.formatVers.marker, err = lookupFormatMajorVersion(opts.FS, dirname)
